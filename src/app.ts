@@ -1,10 +1,12 @@
 import express from 'express'
+import cors from 'cors'  
 import authRoutes from './routes/auth.routes'
 import userRoutes from './routes/user.routes'
 
 const app = express()
 
 // Middleware para parsear JSON no body das requisições
+app.use(cors())  
 app.use(express.json())
 
 // Rota de saúde — útil para verificar se a API está rodando

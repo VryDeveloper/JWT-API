@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VryAuth — Sistema de Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #080c14;
+    --surface:   #0e1420;
+    --border:    #1c2535;
+    --accent:    #3b82f6;
+    --accent2:   #06b6d4;
+    --success:   #10b981;
+    --danger:    #ef4444;
+    --warning:   #f59e0b;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --card:      #111827;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BG GRID ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* ── GLOW ORBS ── */
+  .orb {
+    position: fixed; border-radius: 50%;
+    filter: blur(80px); pointer-events: none; z-index: 0;
+    animation: pulse 8s ease-in-out infinite;
+  }
+  .orb-1 { width:400px; height:400px; background:rgba(59,130,246,.12); top:-100px; left:-100px; }
+  .orb-2 { width:300px; height:300px; background:rgba(6,182,212,.08); bottom:-80px; right:-80px; animation-delay: 3s; }
+  @keyframes pulse { 0%,100%{opacity:.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.1)} }
+
+  /* ── LAYOUT ── */
+  .page { display:none; position:relative; z-index:1; }
+  .page.active { display:flex; }
+
+  /* ── AUTH PAGES ── */
+  .auth-layout {
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .auth-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3rem;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.5);
+    animation: slideUp .4s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  @keyframes slideUp {
+    from { opacity:0; transform:translateY(24px) scale(.97); }
+    to   { opacity:1; transform:translateY(0) scale(1); }
+  }
+
+  .auth-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .auth-logo span { color: var(--accent); }
+
+  .auth-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.4rem;
+    color: #f1f5f9;
+  }
+
+  .auth-sub {
+    color: var(--muted);
+    font-size: .9rem;
+    margin-bottom: 2rem;
+  }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 1.2rem; }
+
+  label {
+    display: block;
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: .5rem;
+  }
+
+  input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .8rem 1rem;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .95rem;
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+  }
+  input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+  }
+  input::placeholder { color: var(--muted); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: .5rem;
+    padding: .85rem 1.5rem;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .95rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    width: 100%;
+  }
+  .btn-primary:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 8px 20px rgba(59,130,246,.4); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: .5rem 1rem;
+    font-size: .85rem;
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+
+  .btn-danger {
+    background: rgba(239,68,68,.1);
+    color: var(--danger);
+    border: 1px solid rgba(239,68,68,.2);
+  }
+  .btn-danger:hover { background: rgba(239,68,68,.2); }
+
+  .btn-success {
+    background: var(--success);
+    color: #fff;
+    width: 100%;
+  }
+  .btn-success:hover { background: #059669; transform: translateY(-1px); }
+
+  .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+
+  .btn-loader {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── SWITCH LINK ── */
+  .auth-switch {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: .9rem;
+    color: var(--muted);
+  }
+  .auth-switch a {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .auth-switch a:hover { text-decoration: underline; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;
+    padding: .9rem 1.4rem;
+    border-radius: 12px;
+    font-size: .9rem;
+    font-weight: 500;
+    display: flex; align-items: center; gap: .6rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    transform: translateY(100px); opacity: 0;
+    transition: all .35s cubic-bezier(.34,1.56,.64,1);
+    max-width: 360px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { background: #064e3b; border: 1px solid var(--success); color: #6ee7b7; }
+  #toast.error   { background: #7f1d1d; border: 1px solid var(--danger);  color: #fca5a5; }
+  #toast.info    { background: #1e3a5f; border: 1px solid var(--accent);  color: #93c5fd; }
+
+  /* ══════════════════════════════════════════
+     DASHBOARD
+  ══════════════════════════════════════════ */
+  .dash-layout {
+    min-height: 100vh;
+    flex-direction: column;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(8,12,20,.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    animation: fadeIn .4s ease;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+
+  .topbar-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    letter-spacing: -0.04em;
+  }
+  .topbar-logo span { color: var(--accent); }
+
+  .topbar-right {
+    display: flex; align-items: center; gap: 1rem;
+  }
+
+  .user-chip {
+    display: flex; align-items: center; gap: .6rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: .4rem .9rem .4rem .4rem;
+  }
+
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: .8rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .avatar-lg {
+    width: 64px; height: 64px;
+    font-size: 1.4rem;
+  }
+
+  .user-name-chip {
+    font-size: .85rem;
+    font-weight: 500;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .dash-content {
+    flex: 1;
+    padding: 2.5rem;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+    animation: slideUp .4s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  .dash-greeting {
+    margin-bottom: 2rem;
+  }
+
+  .dash-greeting h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    color: #f1f5f9;
+    margin-bottom: .3rem;
+  }
+
+  .dash-greeting p { color: var(--muted); font-size: .95rem; }
+
+  /* ── CARDS GRID ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: border-color .2s, transform .2s;
+  }
+  .stat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+  .stat-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .stat-label {
+    font-size: .8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: .3rem;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+
+  /* ── ROLE BADGE ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .2rem .7rem;
+    border-radius: 100px;
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .badge-admin { background: rgba(245,158,11,.15); color: var(--warning); border: 1px solid rgba(245,158,11,.3); }
+  .badge-user  { background: rgba(59,130,246,.15);  color: var(--accent);  border: 1px solid rgba(59,130,246,.3); }
+
+  /* ── SECTION ── */
+  .section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 1.2rem;
+    display: flex; align-items: center; gap: .5rem;
+  }
+
+  /* ── PROFILE FORM ── */
+  .inline-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: .8rem;
+    align-items: end;
+  }
+
+  .inline-form .btn { width: auto; padding: .8rem 1.5rem; }
+
+  /* ── TOKEN DISPLAY ── */
+  .token-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .8rem 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: .75rem;
+    color: var(--muted);
+    word-break: break-all;
+    line-height: 1.5;
+    position: relative;
+  }
+
+  .token-label {
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: .4rem;
+  }
+
+  .token-valid { color: var(--success); }
+  .token-expired { color: var(--danger); }
+
+  .token-grid { display: grid; gap: 1rem; }
+
+  /* ── ACTIONS ── */
+  .actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .8rem;
+  }
+
+  .action-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all .2s;
+    text-align: left;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+  }
+  .action-btn:hover { border-color: var(--accent); background: rgba(59,130,246,.05); }
+  .action-btn .icon { font-size: 1.2rem; margin-bottom: .4rem; }
+  .action-btn .label { font-weight: 500; font-size: .9rem; }
+  .action-btn .desc  { font-size: .8rem; color: var(--muted); margin-top: .2rem; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    display: flex; align-items: center; gap: 1rem;
+    color: var(--muted); font-size: .8rem;
+    margin: 1.2rem 0;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1;
+    height: 1px; background: var(--border);
+  }
+
+  /* ── STATUS DOT ── */
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 0 3px rgba(16,185,129,.2);
+    animation: blink 2s ease infinite;
+    display: inline-block;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── API STATUS ── */
+  .api-status {
+    display: flex; align-items: center; gap: .5rem;
+    font-size: .8rem; color: var(--muted);
+  }
+
+  /* responsive */
+  @media (max-width: 600px) {
+    .auth-card { padding: 2rem 1.5rem; }
+    .dash-content { padding: 1.5rem 1rem; }
+    .inline-form { grid-template-columns: 1fr; }
+    .actions-grid { grid-template-columns: 1fr; }
+    .cards-grid { grid-template-columns: 1fr 1fr; }
+    .topbar { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════
+     PAGE: LOGIN
+══════════════════════════════════ -->
+<div id="page-login" class="page auth-layout active">
+  <div class="auth-card">
+    <div class="auth-logo">Vry<span>Auth</span></div>
+    <h1 class="auth-title">Bem-vindo de volta</h1>
+    <p class="auth-sub">Entre com sua conta para continuar</p>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <button class="btn btn-primary" id="btn-login" onclick="doLogin()">
+      Entrar
+    </button>
+
+    <div class="divider">ou</div>
+
+    <div class="auth-switch">
+      Não tem conta? <a onclick="showPage('page-register')">Criar conta grátis</a>
+    </div>
+
+    <div class="api-status" style="margin-top:1.5rem; justify-content:center;">
+      <span class="status-dot" id="api-dot" style="background:var(--muted);box-shadow:none"></span>
+      <span id="api-status-text">Verificando API...</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PAGE: REGISTER
+══════════════════════════════════ -->
+<div id="page-register" class="page auth-layout">
+  <div class="auth-card">
+    <div class="auth-logo">Vry<span>Auth</span></div>
+    <h1 class="auth-title">Criar conta</h1>
+    <p class="auth-sub">Preencha os dados para se registrar</p>
+
+    <div class="form-group">
+      <label>Nome completo</label>
+      <input type="text" id="reg-name" placeholder="Victor Augusto" autocomplete="name">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="reg-email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Senha <span style="color:var(--muted);font-size:.75rem">(mínimo 6 caracteres)</span></label>
+      <input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password">
+    </div>
+
+    <button class="btn btn-success" id="btn-register" onclick="doRegister()">
+      Criar conta
+    </button>
+
+    <div class="divider">ou</div>
+
+    <div class="auth-switch">
+      Já tem conta? <a onclick="showPage('page-login')">Entrar</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PAGE: DASHBOARD
+══════════════════════════════════ -->
+<div id="page-dashboard" class="page dash-layout">
+  <!-- TOPBAR -->
+  <nav class="topbar">
+    <div class="topbar-logo">Vry<span>Auth</span></div>
+    <div class="topbar-right">
+      <div class="user-chip">
+        <div class="avatar" id="nav-avatar">V</div>
+        <span class="user-name-chip" id="nav-name">Victor</span>
+      </div>
+      <button class="btn btn-ghost" onclick="doLogout()">Sair →</button>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="dash-content">
+
+    <!-- GREETING -->
+    <div class="dash-greeting">
+      <h1>Olá, <span id="dash-name">Victor</span> 👋</h1>
+      <p>Você está autenticado com sucesso via JWT.</p>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="cards-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(59,130,246,.15)">👤</div>
+        <div class="stat-label">Usuário</div>
+        <div class="stat-value" id="card-name">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(6,182,212,.15)">✉️</div>
+        <div class="stat-label">Email</div>
+        <div class="stat-value" id="card-email" style="font-size:.85rem">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(245,158,11,.15)">🏷️</div>
+        <div class="stat-label">Role</div>
+        <div class="stat-value" id="card-role">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(16,185,129,.15)">🕐</div>
+        <div class="stat-label">Criado em</div>
+        <div class="stat-value" id="card-created" style="font-size:.8rem">—</div>
+      </div>
+    </div>
+
+    <!-- EDITAR PERFIL -->
+    <div class="section">
+      <div class="section-title">✏️ Editar perfil</div>
+      <div class="inline-form">
+        <div class="form-group" style="margin:0">
+          <label>Novo nome</label>
+          <input type="text" id="edit-name" placeholder="Seu nome">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Nova senha</label>
+          <input type="password" id="edit-password" placeholder="Nova senha">
+        </div>
+        <button class="btn btn-primary" onclick="doUpdateProfile()" id="btn-update">
+          Salvar
+        </button>
+      </div>
+    </div>
+
+    <!-- TOKENS -->
+    <div class="section">
+      <div class="section-title">🔑 Tokens JWT ativos</div>
+      <div class="token-grid">
+        <div>
+          <div class="token-label token-valid">▶ Access Token (expira em 15 min)</div>
+          <div class="token-box" id="display-access">—</div>
+        </div>
+        <div>
+          <div class="token-label" style="color:var(--accent2)">♻️ Refresh Token (expira em 7 dias)</div>
+          <div class="token-box" id="display-refresh">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AÇÕES -->
+    <div class="section">
+      <div class="section-title">⚡ Ações</div>
+      <div class="actions-grid">
+        <button class="action-btn" onclick="doRefreshToken()">
+          <div class="icon">♻️</div>
+          <div class="label">Renovar Access Token</div>
+          <div class="desc">Simula a expiração e obtém um novo token</div>
+        </button>
+        <button class="action-btn" onclick="doGetMe()">
+          <div class="icon">🔍</div>
+          <div class="label">Recarregar Meus Dados</div>
+          <div class="desc">Busca seus dados atualizados da API</div>
+        </button>
+        <button class="action-btn" onclick="copyToken()">
+          <div class="icon">📋</div>
+          <div class="label">Copiar Access Token</div>
+          <div class="desc">Copia o token para usar no Insomnia</div>
+        </button>
+        <button class="action-btn" style="border-color:rgba(239,68,68,.2)" onclick="doLogout()">
+          <div class="icon">🚪</div>
+          <div class="label" style="color:var(--danger)">Encerrar Sessão</div>
+          <div class="desc">Invalida o refresh token e faz logout</div>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════ -->
+<script>
+  const API = 'http://localhost:3000'
+
+  // ── Estado da aplicação ──────────────────────────────────────────────
+  let state = {
+    accessToken: null,
+    refreshToken: null,
+    user: null
+  }
+
+  // ── Utilitários ──────────────────────────────────────────────────────
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+    document.getElementById(id).classList.add('active')
+  }
+
+  function toast(msg, type = 'info') {
+    const el = document.getElementById('toast')
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' }
+    el.className = `show ${type}`
+    el.innerHTML = `${icons[type]} ${msg}`
+    clearTimeout(window._toastTimer)
+    window._toastTimer = setTimeout(() => el.classList.remove('show'), 3500)
+  }
+
+  function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId)
+    if (!btn) return
+    btn.disabled = loading
+    if (loading) {
+      btn._orig = btn.innerHTML
+      btn.innerHTML = '<div class="btn-loader"></div>'
+    } else {
+      btn.innerHTML = btn._orig || btn.innerHTML
+    }
+  }
+
+  function initials(name) {
+    return name?.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() || '?'
+  }
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleDateString('pt-BR', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    })
+  }
+
+  // ── Verificar API online ─────────────────────────────────────────────
+  async function checkApiStatus() {
+    const dot = document.getElementById('api-dot')
+    const txt = document.getElementById('api-status-text')
+    try {
+      const r = await fetch(`${API}/health`, { signal: AbortSignal.timeout(3000) })
+      if (r.ok) {
+        dot.style.background = 'var(--success)'
+        dot.style.boxShadow = '0 0 0 3px rgba(16,185,129,.2)'
+        txt.textContent = 'API conectada'
+        txt.style.color = 'var(--success)'
+      } else throw new Error()
+    } catch {
+      dot.style.background = 'var(--danger)'
+      dot.style.boxShadow = '0 0 0 3px rgba(239,68,68,.2)'
+      txt.textContent = 'API offline — rode: npm run dev'
+      txt.style.color = 'var(--danger)'
+    }
+  }
+
+  // ── AUTH: REGISTER ───────────────────────────────────────────────────
+  async function doRegister() {
+    const name     = document.getElementById('reg-name').value.trim()
+    const email    = document.getElementById('reg-email').value.trim()
+    const password = document.getElementById('reg-password').value
+
+    if (!name || !email || !password) {
+      toast('Preencha todos os campos', 'error'); return
+    }
+    if (password.length < 6) {
+      toast('Senha deve ter no mínimo 6 caracteres', 'error'); return
+    }
+
+    setLoading('btn-register', true)
+    try {
+      const r = await fetch(`${API}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      })
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.error || 'Erro ao criar conta')
+
+      toast(`Conta criada! Bem-vindo, ${data.user.name} 🎉`, 'success')
+      // Preenche o login automaticamente
+      document.getElementById('login-email').value = email
+      document.getElementById('login-password').value = password
+      setTimeout(() => showPage('page-login'), 1500)
+    } catch (e) {
+      toast(e.message, 'error')
+    } finally {
+      setLoading('btn-register', false)
+    }
+  }
+
+  // ── AUTH: LOGIN ──────────────────────────────────────────────────────
+  async function doLogin() {
+    const email    = document.getElementById('login-email').value.trim()
+    const password = document.getElementById('login-password').value
+
+    if (!email || !password) {
+      toast('Preencha email e senha', 'error'); return
+    }
+
+    setLoading('btn-login', true)
+    try {
+      const r = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.error || 'Credenciais inválidas')
+
+      // Salva tokens no estado
+      state.accessToken  = data.accessToken
+      state.refreshToken = data.refreshToken
+      state.user         = data.user
+
+      loadDashboard()
+      toast(`Login realizado! Olá, ${data.user.name} ✨`, 'success')
+    } catch (e) {
+      toast(e.message, 'error')
+    } finally {
+      setLoading('btn-login', false)
+    }
+  }
+
+  // ── AUTH: LOGOUT ─────────────────────────────────────────────────────
+  async function doLogout() {
+    try {
+      await fetch(`${API}/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: state.refreshToken })
+      })
+    } catch {}
+
+    state = { accessToken: null, refreshToken: null, user: null }
+    toast('Sessão encerrada com sucesso', 'info')
+    showPage('page-login')
+    checkApiStatus()
+  }
+
+  // ── AUTH: REFRESH TOKEN ──────────────────────────────────────────────
+  async function doRefreshToken() {
+    if (!state.refreshToken) { toast('Sem refresh token', 'error'); return }
+    try {
+      const r = await fetch(`${API}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: state.refreshToken })
+      })
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.error || 'Refresh falhou')
+
+      state.accessToken = data.accessToken
+      document.getElementById('display-access').textContent = data.accessToken
+      toast('Access Token renovado com sucesso ♻️', 'success')
+    } catch (e) {
+      toast(e.message, 'error')
+    }
+  }
+
+  // ── USER: GET ME ─────────────────────────────────────────────────────
+  async function doGetMe() {
+    try {
+      const r = await fetch(`${API}/users/me`, {
+        headers: { 'Authorization': `Bearer ${state.accessToken}` }
+      })
+      const data = await r.json()
+      if (!r.ok) {
+        if (r.status === 401) {
+          toast('Token expirado — renovando...', 'info')
+          await doRefreshToken()
+          return doGetMe()
+        }
+        throw new Error(data.error)
+      }
+      state.user = data
+      updateDashboardUI()
+      toast('Dados atualizados 🔍', 'success')
+    } catch (e) {
+      toast(e.message, 'error')
+    }
+  }
+
+  // ── USER: UPDATE PROFILE ─────────────────────────────────────────────
+  async function doUpdateProfile() {
+    const name     = document.getElementById('edit-name').value.trim()
+    const password = document.getElementById('edit-password').value
+
+    if (!name && !password) {
+      toast('Preencha ao menos um campo para atualizar', 'error'); return
+    }
+
+    const body = {}
+    if (name)     body.name     = name
+    if (password) body.password = password
+
+    setLoading('btn-update', true)
+    try {
+      const r = await fetch(`${API}/users/me`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.accessToken}`
+        },
+        body: JSON.stringify(body)
+      })
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.error || 'Erro ao atualizar')
+
+      state.user = data.user
+      updateDashboardUI()
+      document.getElementById('edit-name').value     = ''
+      document.getElementById('edit-password').value = ''
+      toast('Perfil atualizado com sucesso ✏️', 'success')
+    } catch (e) {
+      toast(e.message, 'error')
+    } finally {
+      setLoading('btn-update', false)
+    }
+  }
+
+  // ── HELPERS ──────────────────────────────────────────────────────────
+  function copyToken() {
+    if (!state.accessToken) return
+    navigator.clipboard.writeText(state.accessToken)
+      .then(() => toast('Token copiado! Cole no Insomnia 📋', 'success'))
+      .catch(() => toast('Não foi possível copiar', 'error'))
+  }
+
+  function loadDashboard() {
+    updateDashboardUI()
+    showPage('page-dashboard')
+  }
+
+  function updateDashboardUI() {
+    const u = state.user
+    if (!u) return
+
+    const ini = initials(u.name)
+
+    // Topbar
+    document.getElementById('nav-avatar').textContent = ini
+    document.getElementById('nav-name').textContent   = u.name.split(' ')[0]
+
+    // Greeting
+    document.getElementById('dash-name').textContent  = u.name.split(' ')[0]
+
+    // Cards
+    document.getElementById('card-name').textContent    = u.name
+    document.getElementById('card-email').textContent   = u.email
+    document.getElementById('card-created').textContent = formatDate(u.createdAt)
+
+    const roleEl = document.getElementById('card-role')
+    roleEl.innerHTML = u.role === 'ADMIN'
+      ? '<span class="badge badge-admin">⭐ ADMIN</span>'
+      : '<span class="badge badge-user">👤 USER</span>'
+
+    // Tokens
+    document.getElementById('display-access').textContent  = state.accessToken  || '—'
+    document.getElementById('display-refresh').textContent = state.refreshToken || '—'
+
+    // Edit form placeholder
+    document.getElementById('edit-name').placeholder = u.name
+  }
+
+  // ── ENTER KEY support ────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return
+    const activePage = document.querySelector('.page.active')?.id
+    if (activePage === 'page-login')    doLogin()
+    if (activePage === 'page-register') doRegister()
+  })
+
+  // ── INIT ─────────────────────────────────────────────────────────────
+  checkApiStatus()
+  setInterval(checkApiStatus, 30000)
+</script>
+</body>
+</html>
