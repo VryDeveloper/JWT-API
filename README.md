@@ -111,6 +111,10 @@ Saída esperada:
 
 A interface web conecta-se à API e oferece uma experiência completa de autenticação sem precisar do Insomnia.
 
+<div align="center">
+  <img src=".github\screenshot-2.png" alt="Descrição" width="600">
+</div>
+
 ### Como usar
 
 1. Com a API rodando (`npm run dev`), abra o arquivo `index.html` diretamente no navegador
@@ -130,6 +134,10 @@ A interface web conecta-se à API e oferece uma experiência completa de autenti
 > ```
 
 ### Páginas da interface
+
+<div align="center">
+  <img src=".github\screenshot-3.png" alt="Descrição" width="600">
+</div>
 
 **Tela de Login**
 - Digite email e senha e clique em **Entrar** (ou pressione Enter)
