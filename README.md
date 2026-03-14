@@ -8,6 +8,10 @@ API REST de autenticação com JWT completa, acompanhada de uma interface web pa
 ![Prisma](https://img.shields.io/badge/Prisma-5.10-2D3748?logo=prisma&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
 
+<div align="center">
+  <img src=".github\screenshot-1.png" alt="Descrição" width="600">
+</div>
+
 ---
 
 ## Stack
@@ -20,9 +24,6 @@ API REST de autenticação com JWT completa, acompanhada de uma interface web pa
 | Banco | PostgreSQL 15+ |
 | Autenticação | JWT (jsonwebtoken) |
 | Hash de senha | bcryptjs |
-| Containerização | Docker + Docker Compose |
-| CI/CD | GitHub Actions |
-| Testes | xUnit |
 | Interface | HTML + CSS + JavaScript (vanilla) |
 
 ---
